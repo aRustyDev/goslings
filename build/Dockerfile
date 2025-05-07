@@ -1,26 +1,26 @@
 # -----|Builds from Src|------------
 # syntax=docker/dockerfile:1
-FROM golang:1.23 AS build-api
+FROM golang:1.24.3 AS build-api
 WORKDIR /src
 ARG VERSION
 COPY . /src/
 RUN go build -ldflags "-X main.version=$VERSION" -o cmd/goslings cmd/api/main.go
-
-FROM golang:1.23 AS build-cli
+# ---------------
+FROM golang:1.24.3 AS build-cli
 WORKDIR /src
 ARG VERSION
 ARG NAME
 COPY . /src/
 RUN go build -ldflags "-X main.version=$VERSION" -o cmd/goslings cmd/cli/main.go
-
-FROM golang:1.23 AS build-headless
+# ---------------
+FROM golang:1.24.3 AS build-headless
 WORKDIR /src
 ARG VERSION
 ARG NAME
 COPY . /src/
 RUN go build -ldflags "-X main.version=$VERSION" -o cmd/goslings cmd/headless/main.go
-
-FROM golang:1.23 AS build-tui
+# ---------------
+FROM golang:1.24.3 AS build-tui
 WORKDIR /src
 ARG VERSION
 ARG NAME
@@ -38,8 +38,9 @@ LABEL description="The Untitled Goose Tool rewritten into Go, \
     intended to run in a kubernetes cluster \
     and has an associated helm chart."
 COPY --from=build-api cmd/goslings /bin/goslings
-CMD ["/bin/goslings"]
-
+EXPOSE 443/udp
+ENTRYPOINT ["/bin/goslings"]
+# ---------------
 FROM scratch AS headless
 ARG VERSION
 LABEL version=v$VERSION
@@ -49,8 +50,8 @@ LABEL description="The Untitled Goose Tool rewritten into Go, \
     does not take input after it is started, it \
     can only be killed."
 COPY --from=build-headless cmd/goslings /bin/goslings
-CMD ["/bin/goslings"]
-
+ENTRYPOINT ["/bin/goslings"]
+# ---------------
 FROM scratch AS cli
 ARG VERSION
 LABEL version=v$VERSION
@@ -60,8 +61,8 @@ LABEL description="The Untitled Goose Tool rewritten into Go, \
     terminal or some CI/CD fashion. It can be used \
     both interactively and in scripted fashion."
 COPY --from=build-cli cmd/goslings /bin/goslings
-CMD ["/bin/goslings"]
-
+ENTRYPOINT ["/bin/goslings"]
+# ---------------
 FROM scratch AS tui
 ARG VERSION
 LABEL version=v$VERSION
@@ -72,4 +73,4 @@ LABEL description="The Untitled Goose Tool rewritten into Go, \
     control over the tool, and is useful for \
     debugging the tool or exploring data."
 COPY --from=build-tui cmd/goslings /bin/goslings
-CMD ["/bin/goslings"]
+ENTRYPOINT ["/bin/goslings"]
