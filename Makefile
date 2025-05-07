@@ -37,13 +37,13 @@ release:
 
 pre-publish:
 	#Building CLI
-	@docker build --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target cli ./build/
+	@docker build --tag $(APP_NAME)-cli:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target cli ./build/
 	#Building TUI
-	@docker build --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target tui ./build/
+	@docker build --tag $(APP_NAME)-tui:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target tui ./build/
 	#Building API
-	@docker build --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target api ./build/
+	@docker build --tag $(APP_NAME)-api:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target api ./build/
 	#Building Headless
-	@docker build --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target headless ./build/
+	@docker build --tag $(APP_NAME)-headless:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target headless ./build/
 	#Tagging
 	@git tag -a $(VERSION)
 	@git push origin tag $(VERSION)
@@ -62,3 +62,7 @@ clean:
 	@rm cmd/tui/$(APP_NAME)
 	@rm cmd/api/$(APP_NAME)
 	@rm cmd/headless/$(APP_NAME)
+	@docker image rm $(shell docker image inspect $(APP_NAME)-cli:$(VERSION) | jq '.[].Id' | rg -o "sha256:(.{12})" | cut -d: -f2)
+	@docker image rm $(shell docker image inspect $(APP_NAME)-tui:$(VERSION) | jq '.[].Id' | rg -o "sha256:(.{12})" | cut -d: -f2)
+	@docker image rm $(shell docker image inspect $(APP_NAME)-api:$(VERSION) | jq '.[].Id' | rg -o "sha256:(.{12})" | cut -d: -f2)
+	@docker image rm $(shell docker image inspect $(APP_NAME)-headless:$(VERSION) | jq '.[].Id' | rg -o "sha256:(.{12})" | cut -d: -f2)
