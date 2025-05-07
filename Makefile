@@ -1,5 +1,5 @@
 
-.PHONY=build test
+.PHONY: build test
 
 APP_NAME=goslings
 VERSION = $(shell rg -No "\d+\.\d+\.\d+" internal/utils/version.go)
