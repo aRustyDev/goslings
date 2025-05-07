@@ -37,10 +37,6 @@ func InitConfig() {
 	*/
 	viper.BindEnv("app.name", "APP_NAME") // Bind the app.name key to the APP_NAME environment variable
 
-	// viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
-	// viper.BindPFlag("projectbase", rootCmd.PersistentFlags().Lookup("projectbase"))
-	// viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
-
 	viper.SetDefault("author", "Adam Smith <developer@gh.arusty.dev>")
 	viper.SetDefault("license", "agpl3")
 
