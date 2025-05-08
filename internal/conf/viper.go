@@ -39,16 +39,16 @@ func InitConfig() {
 	       For example if the second parameter is "id", Viper will look for the ENV variable "ID".
 	*/
 	// Bind the nested keys to the DISTINCT environment variables
-	viper.BindEnv("auth.simple.user", "GOSLING_USER")
-	viper.BindEnv("auth.simple.pass", "GOSLING_PASS")
-	viper.BindEnv("auth.app.id", "GOSLING_APP_ID")
-	viper.BindEnv("auth.app.secret", "GOSLING_APP_SECRET")
-	viper.BindEnv("msft.tenant", "GOSLING_TENANT")
-	viper.BindEnv("msft.subscription", "GOSLING_SUBSCRIPTION")
-	viper.BindEnv("msft.usgov.cloud", "GOSLING_USGOV_CLOUD")
-	viper.BindEnv("msft.usgov.exo", "GOSLING_USGOV_EXO")
-	viper.BindEnv("msft.m365auth", "GOSLING_M365_AUTH")
-	viper.BindEnv("msft.msgtrace", "GOSLING_EXO_MSG_TRACE")
+	// viper.BindEnv("auth.simple.user", "GOSLING_USER")
+	// viper.BindEnv("auth.simple.pass", "GOSLING_PASS")
+	// viper.BindEnv("auth.app.id", "GOSLING_APP_ID")
+	// viper.BindEnv("auth.app.secret", "GOSLING_APP_SECRET")
+	// viper.BindEnv("msft.tenant", "GOSLING_TENANT")
+	// viper.BindEnv("msft.subscription", "GOSLING_SUBSCRIPTION")
+	// viper.BindEnv("msft.usgov.cloud", "GOSLING_USGOV_CLOUD")
+	// viper.BindEnv("msft.usgov.exo", "GOSLING_USGOV_EXO")
+	// viper.BindEnv("msft.m365auth", "GOSLING_M365_AUTH")
+	// viper.BindEnv("msft.msgtrace", "GOSLING_EXO_MSG_TRACE")
 
 	viper.SetDefault("author", "Adam Smith <developer@gh.arusty.dev>")
 	viper.SetDefault("license", "agpl3")

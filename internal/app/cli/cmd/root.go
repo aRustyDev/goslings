@@ -20,6 +20,7 @@ func init() {
 	rootCmd.AddCommand(confCmd)
 	rootCmd.AddCommand(dumpCmd)
 	rootCmd.AddCommand(authCmd)
+	rootCmd.AddCommand(licenseCmd)
 
 	rootCmd.PersistentFlags().StringP("author", "a", "Adam Smith", "Author name for copyright attribution")
 	// rootCmd.PersistentFlags().Bool("viper", true, "Use Viper for configuration")

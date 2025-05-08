@@ -260,7 +260,7 @@ func (l *AzureLease) Renew(ctx context.Context, creds *shared.Credentials, param
 	// Check if credentials are expired
 	if l.IsExpired(creds, 0) {
 		// If far past expiration, get new credentials instead
-		if time.Now().Sub(creds.ExpiresAt) > time.Hour {
+		if time.Since(creds.ExpiresAt) > time.Hour {
 			log.Info("Credentials expired too long ago, acquiring new ones")
 			return l.Acquire(ctx, params)
 		}

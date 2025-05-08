@@ -16,7 +16,7 @@ import (
 
 // Common errors
 var (
-	ErrConfigNotSet = errors.New("A Config parameter was not set")
+	ErrConfigNotSet = errors.New("a config parameter was not set")
 )
 
 var authCmd = &cobra.Command{

@@ -1,1 +1,1 @@
-# tmpl-go
+# Goslings
