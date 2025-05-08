@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"goslings/internal/app/cli/cmd"
 	"goslings/internal/app/tui"
-	"goslings/internal/auth"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // https://www.taranveerbains.ca/blog/13-making-a-tui-with-go
@@ -17,12 +19,13 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
-	fmt.Printf(Hello("name string"))
+	log.Println("Hello logrus!")
+	fmt.Println(Hello("name string"))
 }
 
 func Hello(name string) string {
 	// Return a greeting that embeds the name in a message.
 	message := fmt.Sprintf("Hi, %v. Welcome!", name)
-	auth.Goodbye(name)
+	cmd.Goodbye(name)
 	return message
 }
