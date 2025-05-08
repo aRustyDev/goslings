@@ -22,12 +22,6 @@ var (
 var authCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "middle command for authenticating to the cloud",
-	// RunE: func(cmd *cobra.Command, args []string) error {
-	// 	ctx := cmd.Context()
-	// 	value := ctx.Value("auth")
-	// 	log.Infof("Auth(RunE): %s", value) // Output: value
-	// 	return nil
-	// },
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("Starting authentication example")
 
