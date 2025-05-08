@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
+	"goslings/internal/about"
 	"goslings/internal/conf"
-	"goslings/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +28,7 @@ func init() {
 var rootCmd = &cobra.Command{
 	Use:     "gosling",
 	Short:   "Goslings is a cloud-native MSFT Cloud IR tool",
-	Version: utils.Version,
+	Version: about.Version,
 	Long: `The Goslings Tool is a robust and flexible hunt and incident
 			response tool that adds novel authentication and data gathering
 			methods in order to run a full investigation against a customer’s
@@ -36,11 +37,12 @@ var rootCmd = &cobra.Command{
                 https://github.com/cisagov/untitledgoosetool`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
+		// TODO: Output subcommand options
 	},
 }
 
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+func Execute(ctx context.Context) {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
