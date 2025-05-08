@@ -27,3 +27,6 @@ go.work.sum
 # Any binaries or non-source files
 cmd/*/*
 !cmd/*/*.go
+
+# Sensitive config files
+configs/brood.yaml

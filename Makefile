@@ -58,6 +58,7 @@ test:
 	@go test -v
 
 clean:
+	@rm -rf .credentials
 	@rm cmd/cli/$(APP_NAME)
 	@rm cmd/tui/$(APP_NAME)
 	@rm cmd/api/$(APP_NAME)
