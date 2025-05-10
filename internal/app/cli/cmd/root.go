@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"goslings/internal/about"
-	"goslings/internal/conf"
-
+	"github.com/arustydev/goslings/internal/about"
+	"github.com/arustydev/goslings/internal/conf"
 	"github.com/spf13/cobra"
 )
 
 // define flags and handle configuration
 func init() {
-
 	cobra.OnInitialize(conf.InitConfig)
 
 	rootCmd.AddCommand(honkCmd)
@@ -22,7 +20,9 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 	rootCmd.AddCommand(licenseCmd)
 
-	rootCmd.PersistentFlags().StringP("author", "a", "Adam Smith", "Author name for copyright attribution")
+	rootCmd.PersistentFlags().
+		StringP("author", "a", "Adam Smith", "Author name for copyright attribution")
+
 	// rootCmd.PersistentFlags().Bool("viper", true, "Use Viper for configuration")
 }
 

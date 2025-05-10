@@ -31,7 +31,6 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	// Is it a key press?
 	case tea.KeyMsg:
 

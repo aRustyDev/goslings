@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"goslings/internal/app/cli/cmd"
 
+	"github.com/arustydev/goslings/internal/app/cli/cmd"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )

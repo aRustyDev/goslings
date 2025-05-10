@@ -2,10 +2,10 @@ package mock
 
 import (
 	"context"
-	"goslings/internal/auth/lease"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/arustydev/goslings/internal/auth/lease"
 )
 
 // MockCredentialFactory implements CredentialFactory using real Azure SDK
@@ -28,10 +28,17 @@ type MockTokenCredential struct{}
 // 	return azidentity.NewInteractiveBrowserCredential(options)
 // }
 
-func (f *MockCredentialFactory) GetCredential(ctx context.Context, CredentialCategory lease.CredentialCategory, options *lease.CredentialOptions) (lease.TokenCredential, error) {
+func (f *MockCredentialFactory) GetCredential(
+	ctx context.Context,
+	CredentialCategory lease.CredentialCategory,
+	options *lease.CredentialOptions,
+) (lease.TokenCredential, error) {
 	return &MockTokenCredential{}, nil
 }
 
-func (f *MockTokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (*azcore.AccessToken, error) {
+func (f *MockTokenCredential) GetToken(
+	ctx context.Context,
+	opts policy.TokenRequestOptions,
+) (*azcore.AccessToken, error) {
 	return &azcore.AccessToken{}, nil
 }

@@ -4,13 +4,12 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"goslings/internal/auth"
-	"goslings/internal/auth/shared"
-	"goslings/internal/conf"
 	"time"
 
+	"github.com/arustydev/goslings/internal/auth"
+	"github.com/arustydev/goslings/internal/auth/shared"
+	"github.com/arustydev/goslings/internal/conf"
 	log "github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 )
 

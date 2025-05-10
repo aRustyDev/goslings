@@ -3,16 +3,14 @@ package store
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"crypto/rand"
-
-	"goslings/internal/auth/shared"
-
+	"github.com/arustydev/goslings/internal/auth/shared"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
@@ -64,7 +62,7 @@ func NewFileStore(basePath string, encryptionKey []byte) (*FileStore, error) {
 	}
 
 	// Create directory if it doesn't exist
-	if err := os.MkdirAll(basePath, 0700); err != nil {
+	if err := os.MkdirAll(basePath, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create directory for credentials: %w", err)
 	}
 
@@ -125,7 +123,7 @@ func (fs *FileStore) StoreCredentials(ctx context.Context, creds *shared.Credent
 
 	// Write to file
 	path := filepath.Join(fs.BasePath, CredsFileName)
-	if err := os.WriteFile(path, encrypted, 0600); err != nil {
+	if err := os.WriteFile(path, encrypted, 0o600); err != nil {
 		return fmt.Errorf("failed to write credentials file: %w", err)
 	}
 
@@ -178,7 +176,7 @@ func (fs *FileStore) StoreParams(ctx context.Context, params *shared.AuthParams)
 
 	// Write to file
 	path := filepath.Join(fs.BasePath, ParamsFileName)
-	if err := os.WriteFile(path, encrypted, 0600); err != nil {
+	if err := os.WriteFile(path, encrypted, 0o600); err != nil {
 		return fmt.Errorf("failed to write parameters file: %w", err)
 	}
 
@@ -216,7 +214,10 @@ func (fs *FileStore) LoadParams(ctx context.Context) (*shared.AuthParams, error)
 }
 
 // StoreM365Resources implements Store.StoreM365Resources for FileStore
-func (fs *FileStore) StoreM365Resources(ctx context.Context, resources *shared.M365Resources) error {
+func (fs *FileStore) StoreM365Resources(
+	ctx context.Context,
+	resources *shared.M365Resources,
+) error {
 	// Marshal M365 resources to JSON
 	data, err := json.Marshal(resources)
 	if err != nil {
@@ -231,7 +232,7 @@ func (fs *FileStore) StoreM365Resources(ctx context.Context, resources *shared.M
 
 	// Write to file
 	path := filepath.Join(fs.BasePath, M365FileName)
-	if err := os.WriteFile(path, encrypted, 0600); err != nil {
+	if err := os.WriteFile(path, encrypted, 0o600); err != nil {
 		return fmt.Errorf("failed to write M365 resources file: %w", err)
 	}
 

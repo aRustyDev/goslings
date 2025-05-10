@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"goslings/internal/app/cli/cmd"
-
 	"time"
+
+	"github.com/arustydev/goslings/internal/app/cli/cmd"
 )
 
 func main() {

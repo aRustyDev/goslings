@@ -5,11 +5,10 @@ import (
 	"context"
 	"time"
 
-	"goslings/internal/auth/shared"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/arustydev/goslings/internal/auth/shared"
 )
 
 // Lease is the interface that wraps the basic token acquisition and renewal methods
@@ -50,7 +49,11 @@ const (
 
 // CredentialFactory abstracts credential creation for testing
 type CredentialFactory interface {
-	GetCredential(ctx context.Context, CredentialCategory CredentialCategory, options *CredentialOptions) (TokenCredential, error)
+	GetCredential(
+		ctx context.Context,
+		CredentialCategory CredentialCategory,
+		options *CredentialOptions,
+	) (TokenCredential, error)
 }
 
 // CredentialOptions is a struct for holding all options that any Credential returned by a CredentialFactory GetCredential() could require

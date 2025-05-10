@@ -3,18 +3,23 @@ package conf
 import (
 	"strings"
 
-	"goslings/internal/auth/shared"
-
+	"github.com/arustydev/goslings/internal/auth/shared"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 func InitConfig() {
-	viper.SetConfigName("brood")              // Config file name without extension
-	viper.SetConfigType("yaml")               // Config file type
-	viper.AddConfigPath(".")                  // 1st: Look for the config file in the current directory
-	viper.AddConfigPath("./configs")          // 2nd: Look for the config file in the local configs directory
-	viper.AddConfigPath("~/.config/goslings") // 3rd: Look for the config file in the home config directory
+	viper.SetConfigName("brood") // Config file name without extension
+	viper.SetConfigType("yaml")  // Config file type
+	viper.AddConfigPath(
+		".",
+	) // 1st: Look for the config file in the current directory
+	viper.AddConfigPath(
+		"./configs",
+	) // 2nd: Look for the config file in the local configs directory
+	viper.AddConfigPath(
+		"~/.config/goslings",
+	) // 3rd: Look for the config file in the home config directory
 	viper.SetConfigFile("./configs/brood.yaml")
 	/*
 	   AutomaticEnv will check for an environment variable any time a viper.Get request is made.
@@ -22,8 +27,10 @@ func InitConfig() {
 	       It will check for an environment variable with a name matching the key uppercased and prefixed with the EnvPrefix if set.
 	*/
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("env")                              // will be uppercased automatically
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // this is useful e.g. want to use . in Get() calls, but environmental variables to use _ delimiters (e.g. app.port -> APP_PORT)
+	viper.SetEnvPrefix("env") // will be uppercased automatically
+	viper.SetEnvKeyReplacer(
+		strings.NewReplacer(".", "_"),
+	) // this is useful e.g. want to use . in Get() calls, but environmental variables to use _ delimiters (e.g. app.port -> APP_PORT)
 
 	log.Infof("Reading config file %s", viper.GetViper().ConfigFileUsed())
 	if err := viper.ReadInConfig(); err != nil {
@@ -52,7 +59,6 @@ func InitConfig() {
 
 	viper.SetDefault("author", "Adam Smith <developer@gh.arusty.dev>")
 	viper.SetDefault("license", "agpl3")
-
 }
 
 // getConfigFromViper simulates getting config from a viper-based config package

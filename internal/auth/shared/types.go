@@ -6,8 +6,10 @@ import (
 )
 
 // AuthType represents the type of authentication being used
-type AuthType string
-type CredentialFactoryType string
+type (
+	AuthType              string
+	CredentialFactoryType string
+)
 
 const (
 	// DeviceCodeAuth represents authentication via device code flow

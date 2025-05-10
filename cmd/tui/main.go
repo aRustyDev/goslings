@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"goslings/internal/app/cli/cmd"
-	"goslings/internal/app/tui"
 	"os"
 
+	"github.com/arustydev/goslings/internal/app/cli/cmd"
+	"github.com/arustydev/goslings/internal/app/tui"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -30,7 +30,11 @@ type DefaultTokenCredential struct{}
 // 	return azidentity.NewInteractiveBrowserCredential(options)
 // }
 
-func (f *DefaultCredentialFactory) GetCredential(ctx context.Context, CredentialCategory CredentialCategory, options *CredentialOptions) (TokenCredential, error) {
+func (f *DefaultCredentialFactory) GetCredential(
+	ctx context.Context,
+	CredentialCategory CredentialCategory,
+	options *CredentialOptions,
+) (TokenCredential, error) {
 	switch CredentialCategory {
 	case DeviceCode:
 		azidentity.NewDeviceCodeCredential(&azidentity.DeviceCodeCredentialOptions{
@@ -53,6 +57,9 @@ func (f *DefaultCredentialFactory) GetCredential(ctx context.Context, Credential
 	return &DefaultTokenCredential{}, nil
 }
 
-func (f *DefaultTokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (*azcore.AccessToken, error) {
+func (f *DefaultTokenCredential) GetToken(
+	ctx context.Context,
+	opts policy.TokenRequestOptions,
+) (*azcore.AccessToken, error) {
 	return &azcore.AccessToken{}, nil
 }

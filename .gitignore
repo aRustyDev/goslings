@@ -30,3 +30,4 @@ cmd/*/*
 
 # Sensitive config files
 configs/brood.yaml
+internal/auth/test/

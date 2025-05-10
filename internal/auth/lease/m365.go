@@ -8,8 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"goslings/internal/auth/shared"
-
+	"github.com/arustydev/goslings/internal/auth/shared"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,7 +28,10 @@ func NewM365Lease() *M365Lease {
 }
 
 // Acquire implements Lease.Acquire for M365Lease
-func (l *M365Lease) Acquire(ctx context.Context, params *shared.AuthParams) (*shared.Credentials, error) {
+func (l *M365Lease) Acquire(
+	ctx context.Context,
+	params *shared.AuthParams,
+) (*shared.Credentials, error) {
 	// Skip if M365 is not enabled
 	if !params.M365Enabled {
 		log.Debug("M365 authentication is disabled")
@@ -76,7 +78,11 @@ func (l *M365Lease) Acquire(ctx context.Context, params *shared.AuthParams) (*sh
 }
 
 // Renew implements Lease.Renew for M365Lease
-func (l *M365Lease) Renew(ctx context.Context, creds *shared.Credentials, params *shared.AuthParams) (*shared.Credentials, error) {
+func (l *M365Lease) Renew(
+	ctx context.Context,
+	creds *shared.Credentials,
+	params *shared.AuthParams,
+) (*shared.Credentials, error) {
 	// For M365, we typically need to re-authenticate rather than renew
 	// Session cookies often don't support refresh
 	return l.Acquire(ctx, params)
@@ -98,7 +104,12 @@ func (l *M365Lease) IsExpired(creds *shared.Credentials, gracePeriod time.Durati
 }
 
 // authenticateExchangeOnline handles Exchange Online authentication
-func (l *M365Lease) authenticateExchangeOnline(ctx context.Context, params *shared.AuthParams, creds *shared.Credentials, baseURL string) error {
+func (l *M365Lease) authenticateExchangeOnline(
+	ctx context.Context,
+	params *shared.AuthParams,
+	creds *shared.Credentials,
+	baseURL string,
+) error {
 	// In a real implementation, this would make HTTP requests to authenticate with Exchange Online
 	// For now, we'll provide a placeholder implementation
 
@@ -128,7 +139,12 @@ func (l *M365Lease) authenticateExchangeOnline(ctx context.Context, params *shar
 }
 
 // authenticateMessageTrace handles Message Trace authentication
-func (l *M365Lease) authenticateMessageTrace(ctx context.Context, params *shared.AuthParams, creds *shared.Credentials, baseURL string) error {
+func (l *M365Lease) authenticateMessageTrace(
+	ctx context.Context,
+	params *shared.AuthParams,
+	creds *shared.Credentials,
+	baseURL string,
+) error {
 	// In a real implementation, this would make HTTP requests to authenticate with Message Trace
 	// For now, we'll provide a placeholder implementation
 

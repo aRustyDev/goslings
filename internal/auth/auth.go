@@ -7,14 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"sync"
 	"time"
 
-	"goslings/internal/auth/lease"
-	"goslings/internal/auth/shared"
-	"goslings/internal/auth/store"
-
+	"github.com/arustydev/goslings/internal/auth/lease"
+	"github.com/arustydev/goslings/internal/auth/shared"
+	"github.com/arustydev/goslings/internal/auth/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -75,7 +73,6 @@ type Options struct {
 
 // NewAuthManager creates a new authentication manager
 func NewAuthManager(opts Options) (*AuthManager, error) {
-
 	auth := &AuthManager{
 		Leases: make(map[Service]lease.Lease),
 	}
@@ -107,7 +104,6 @@ func NewAuthManager(opts Options) (*AuthManager, error) {
 
 	// Load credentials from store
 	if err := auth.loadFromStore(context.Background()); err != nil {
-
 		log.Debugf("Failed to load credentials from store: %v", err)
 		// Continue without credentials, we'll get them later
 	}

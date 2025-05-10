@@ -2,11 +2,11 @@ package mock
 
 import (
 	"context"
-	"goslings/internal/auth/lease"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/arustydev/goslings/internal/auth/lease"
 )
 
 // CredentialFactory abstracts credential creation for testing
@@ -25,12 +25,19 @@ type MockM365TokenCredential struct {
 	Error error
 }
 
-func (cf *MockM365TokenCredentialFactory) GetCredential(ctx context.Context, CredentialCategory lease.CredentialCategory, options *lease.CredentialOptions) (*MockM365TokenCredential, error) {
+func (cf *MockM365TokenCredentialFactory) GetCredential(
+	ctx context.Context,
+	CredentialCategory lease.CredentialCategory,
+	options *lease.CredentialOptions,
+) (*MockM365TokenCredential, error) {
 	return &MockM365TokenCredential{}, nil
 }
 
 // GetToken implements the TokenCredential interface
-func (mc *MockM365TokenCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (*azcore.AccessToken, error) {
+func (mc *MockM365TokenCredential) GetToken(
+	ctx context.Context,
+	opts policy.TokenRequestOptions,
+) (*azcore.AccessToken, error) {
 	// Case: Error not nil
 	if mc.Error != nil {
 		return nil, mc.Error

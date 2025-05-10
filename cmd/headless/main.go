@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"goslings/internal/app/cli/cmd"
-	"goslings/internal/app/tui"
-
+	"github.com/arustydev/goslings/internal/app/cli/cmd"
+	"github.com/arustydev/goslings/internal/app/tui"
 	log "github.com/sirupsen/logrus"
 )
 

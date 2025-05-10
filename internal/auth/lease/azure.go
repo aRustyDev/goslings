@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"goslings/internal/auth/shared"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-
+	"github.com/arustydev/goslings/internal/auth/shared"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,7 +48,10 @@ func (l *AzureLease) getCloudURL(params *shared.AuthParams) string {
 }
 
 // Acquire implements Lease.Acquire for AzureLease
-func (l *AzureLease) Acquire(ctx context.Context, factory *CredentialFactory) (*shared.Credentials, error) {
+func (l *AzureLease) Acquire(
+	ctx context.Context,
+	factory *CredentialFactory,
+) (*shared.Credentials, error) {
 	// Set the cloud URL based on parameters
 	l.CloudURL = l.getCloudURL(l.Options.AuthParams)
 
@@ -90,7 +91,10 @@ func (l *AzureLease) IsExpired(factory *CredentialFactory, gracePeriod time.Dura
 	return time.Now().After(l.Expiration)
 }
 
-func (l *AzureLease) Renew(ctx context.Context, factory *CredentialFactory) (*shared.Credentials, error) {
+func (l *AzureLease) Renew(
+	ctx context.Context,
+	factory *CredentialFactory,
+) (*shared.Credentials, error) {
 	// Set the cloud URL based on parameters
 	l.CloudURL = l.getCloudURL(l.Options.AuthParams)
 
@@ -127,7 +131,11 @@ func (l *AzureLease) Renew(ctx context.Context, factory *CredentialFactory) (*sh
 }
 
 // acquireViaDeviceCode attempts to authenticate using device code flow
-func (l *AzureLease) acquireViaDeviceCode(ctx context.Context, params *shared.AuthParams, creds *shared.Credentials) error {
+func (l *AzureLease) acquireViaDeviceCode(
+	ctx context.Context,
+	params *shared.AuthParams,
+	creds *shared.Credentials,
+) error {
 	log.Info("Attempting to authenticate via device code. You may have to accept MFA prompts.")
 
 	// Skip if no tenant or client ID
@@ -183,12 +191,18 @@ func (l *AzureLease) acquireViaDeviceCode(ctx context.Context, params *shared.Au
 }
 
 // acquireViaClientCredentials attempts to authenticate using client credentials
-func (l *AzureLease) acquireViaClientCredentials(ctx context.Context, params *shared.AuthParams, creds *shared.Credentials) error {
+func (l *AzureLease) acquireViaClientCredentials(
+	ctx context.Context,
+	params *shared.AuthParams,
+	creds *shared.Credentials,
+) error {
 	log.Info("Attempting to authenticate with client credentials")
 
 	// Validate required fields
 	if params.ClientID == "" || params.ClientSecret == "" || params.TenantID == "" {
-		return errors.New("client ID, client secret, and tenant ID are required for client credentials auth")
+		return errors.New(
+			"client ID, client secret, and tenant ID are required for client credentials auth",
+		)
 	}
 
 	// // Create options
@@ -233,12 +247,18 @@ func (l *AzureLease) acquireViaClientCredentials(ctx context.Context, params *sh
 }
 
 // acquireViaInteractiveBrowser attempts to authenticate using interactive browser
-func (l *AzureLease) acquireViaInteractiveBrowser(ctx context.Context, params *shared.AuthParams, creds *shared.Credentials) error {
+func (l *AzureLease) acquireViaInteractiveBrowser(
+	ctx context.Context,
+	params *shared.AuthParams,
+	creds *shared.Credentials,
+) error {
 	log.Info("Attempting to authenticate with interactive browser login")
 
 	// Skip if no tenant or client ID
 	if params.TenantID == "" || params.ClientID == "" {
-		return errors.New("tenant ID and client ID are required for interactive browser authentication")
+		return errors.New(
+			"tenant ID and client ID are required for interactive browser authentication",
+		)
 	}
 
 	// // Create options
@@ -248,10 +268,14 @@ func (l *AzureLease) acquireViaInteractiveBrowser(ctx context.Context, params *s
 	// }
 
 	// Create the credential using the factory
-	credential, err := l.CredentialFactory.GetCredential(ctx, InteractiveBrowser, &CredentialOptions{
-		TenantID: params.TenantID,
-		ClientID: params.ClientID,
-	})
+	credential, err := l.CredentialFactory.GetCredential(
+		ctx,
+		InteractiveBrowser,
+		&CredentialOptions{
+			TenantID: params.TenantID,
+			ClientID: params.ClientID,
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create interactive browser credential: %w", err)
 	}

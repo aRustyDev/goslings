@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"goslings/internal/about"
 
+	"github.com/arustydev/goslings/internal/about"
 	"github.com/spf13/cobra"
 )
 
