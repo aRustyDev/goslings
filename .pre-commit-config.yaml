@@ -1,3 +1,6 @@
+default_install_hook_types:
+    - pre-commit
+    - commit-msg
 repos:
     - repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v5.0.0
@@ -11,39 +14,80 @@ repos:
           - id: check-merge-conflict
           - id: check-shebang-scripts-are-executable
           - id: check-symlinks
+            name: "🔍 pre-commit · Find empty symlinks"
           - id: check-toml
+            name: "🔍 pre-commit · Validate TOML for Best Practices"
           - id: mixed-line-ending
+            name: "🔍 pre-commit · Identify points where there were mixed line endings"
     - repo: https://github.com/dnephin/pre-commit-golang
       rev: v0.5.1
       hooks:
           - id: go-fmt
+            name: "🔍 go-fmt · Format Golang code"
           - id: go-imports
+            name: "🔍 go-imports · Lint Go imports"
           - id: no-go-testing
           - id: golangci-lint
+            name: "🔍 golangci-lint · Lint Golang"
           - id: go-unit-tests
+            name: "✅ go-unit-tests · Validate code with Unit Tests"
     - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
       rev: v9.22.0
       hooks:
           - id: commitlint
             stages: [commit-msg]
             additional_dependencies: ["@commitlint/config-conventional"]
+            name: "🌳 commitlint · Validate Commit Messages for Best Practices"
     - repo: https://github.com/rhysd/actionlint
       rev: v1.7.7
       hooks:
           - id: actionlint
+            name: "✅ actionlint · Validate GitHub Actions files for Best Practices"
     - repo: https://github.com/trufflesecurity/truffleHog
       rev: v3.88.29
       hooks:
           - id: trufflehog
+            name: "🔒 trufflehog · Detect hardcoded secrets"
     - repo: https://github.com/mrtazz/checkmake
       rev: 0.2.2
       hooks:
           - id: checkmake
+            name: "✅ checkmake · Validate Makefiles for Best Practices"
     - repo: https://github.com/openstack/bashate
       rev: 2.1.1
       hooks:
           - id: bashate
+            name: "🐚 bashate · Validate Shell Files for Best Practices"
     - repo: https://github.com/shellcheck-py/shellcheck-py
       rev: v0.10.0.1
       hooks:
           - id: shellcheck
+            name: "🐚 shellcheck · Validate Shell Files for Best Practices"
+    # - repo: https://github.com/siderolabs/conform
+    #   rev: main
+    #   hooks:
+    #       - id: conform
+    #         stages:
+    #             - commit-msg
+    # - repo: <https://github.com/markdownlint/markdownlint>
+    #   rev: v0.12.0
+    #   hooks:
+    #       - id: markdownlint
+    #         name: "📝 markdown · Lint markdown"
+
+    # - repo: <https://github.com/pre-commit/mirrors-prettier>
+    #   rev: v4.0.0-alpha.8
+    #   hooks:
+    #       - id: prettier
+    #         name: "✨ misc-files · Format misc web files"
+    #         types_or: [yaml, html, scss]
+    #         additional_dependencies:
+    #             - prettier@3.4.2
+
+    # - repo: https://github.com/commitizen-tools/commitizen
+    #   rev: v4.1.0
+    #   hooks:
+    #       - id: commitizen
+    #         name: "🌳 git · Validate commit message"
+    #         stages: [commit-msg]
+    #         additional_dependencies: [cz-conventional-gitmoji]
