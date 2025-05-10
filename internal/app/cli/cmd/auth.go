@@ -36,7 +36,6 @@ var authCmd = &cobra.Command{
 			StoreType:     shared.FileStore,
 			StorePath:     "./.credentials",
 			EncryptionKey: encryptionKey,
-			Debug:         true,
 		})
 		if err != nil {
 			log.Fatalf("Failed to create auth manager: %v", err)

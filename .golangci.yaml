@@ -1,0 +1,67 @@
+# See the dedicated "version" documentation section.
+version: "2"
+linters:
+    # default: all
+    # See the dedicated "linters" documentation section.
+    # enable:
+    #     - errcheck
+    # settings:
+    #     # See the dedicated "linters.settings" documentation section.
+    #     option: value
+    exclusions:
+        # Excluding configuration per-path, per-linter, per-text and per-source.
+        rules:
+            # # Exclude some linters from running on tests files.
+            # - path: _test\.go
+            #   linters:
+            #       - gocyclo
+            #       - errcheck
+            #       - dupl
+            #       - gosec
+            # # Run some linter only for test files by excluding its issues for everything else.
+            # - path-except: _test\.go
+            #   linters:
+            #       - forbidigo
+            # # Exclude known linters from partially hard-vendored code,
+            # # which is impossible to exclude via `nolint` comments.
+            # # `/` will be replaced by the current OS file path separator to properly work on Windows.
+            # - path: internal/hmac/
+            #   text: "weak cryptographic primitive"
+            #   linters:
+            #       - gosec
+            # Exclude some `staticcheck` messages.
+            - linters:
+                  - errcheck
+              text: "azidentity.New.*Credential"
+            # # Exclude `lll` issues for long lines with `go:generate`.
+            # - linters:
+            #       - lll
+            #   source: "^//go:generate "
+        # Which file paths to exclude: they will be analyzed, but issues from them won't be reported.
+        # "/" will be replaced by the current OS file path separator to properly work on Windows.
+        # Default: []
+        paths:
+            - ".*\\.my\\.go$"
+            - lib/bad.go
+        # Which file paths to not exclude.
+        # Default: []
+        paths-except:
+            - ".*\\.my\\.go$"
+            - lib/bad.go
+# formatters:
+#     # See the dedicated "formatters" documentation section.
+#     option: value
+# issues:
+#     # See the dedicated "issues" documentation section.
+#     option: value
+# # Output configuration options.
+# output:
+#     # See the dedicated "output" documentation section.
+#     option: value
+# # Options for analysis running.
+# run:
+#     # See the dedicated "run" documentation section.
+#     option: value
+# severity:
+#     # See the dedicated "severity" documentation section.
+#     option: value

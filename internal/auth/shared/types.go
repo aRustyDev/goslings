@@ -7,6 +7,7 @@ import (
 
 // AuthType represents the type of authentication being used
 type AuthType string
+type CredentialFactoryType string
 
 const (
 	// DeviceCodeAuth represents authentication via device code flow
@@ -20,6 +21,12 @@ const (
 
 	// M365Auth represents authentication specific to M365 services
 	M365Auth AuthType = "m365"
+
+	// M365Auth represents authentication specific to M365 services
+	AzureCredentialFactory CredentialFactoryType = "azure"
+
+	// M365Auth represents authentication specific to M365 services
+	MockAzureCredentialFactory CredentialFactoryType = "azure-mock"
 )
 
 // AuthParams contains all the parameters needed for authentication

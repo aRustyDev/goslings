@@ -26,7 +26,8 @@ var (
 
 // Errors from external packages
 var (
-	ErrNotAuthenticated = lease.ErrNotAuthenticated
+	ErrNotAuthenticated   = lease.ErrNotAuthenticated
+	ErrCredentialsExpired = lease.ErrCredentialsExpired
 )
 
 // Service defines supported service types
@@ -70,9 +71,6 @@ type Options struct {
 
 	// EncryptionKey is the key for encrypting sensitive data
 	EncryptionKey []byte
-
-	// Debug enables verbose logging
-	Debug bool
 }
 
 // NewAuthManager creates a new authentication manager
@@ -104,8 +102,8 @@ func NewAuthManager(opts Options) (*AuthManager, error) {
 	}
 
 	// Initialize the leases
-	auth.Leases[AzureService] = lease.NewAzureLease()
-	auth.Leases[M365Service] = lease.NewM365Lease()
+	auth.Leases[AzureService] = lease.NewAzureLease(lease.CredentialOptions{})
+	// auth.Leases[M365Service] = lease.NewM365Lease()
 
 	// Load credentials from store
 	if err := auth.loadFromStore(context.Background()); err != nil {
@@ -184,43 +182,43 @@ func (a *AuthManager) Authenticate(ctx context.Context, params *shared.AuthParam
 	// Update current auth params
 	a.currentAuthParams = params
 
-	// Authenticate to Azure/Graph
-	azureLease, ok := a.Leases[AzureService]
-	if !ok {
-		return fmt.Errorf("azure lease not found")
-	}
+	// // Authenticate to Azure/Graph
+	// azureLease, ok := a.Leases[AzureService]
+	// if !ok {
+	// 	return fmt.Errorf("azure lease not found")
+	// }
 
-	azureCreds, err := azureLease.Acquire(ctx, params)
-	if err != nil {
-		return fmt.Errorf("failed to authenticate to Azure: %w", err)
-	}
+	// azureCreds, err := azureLease.Acquire(ctx, params)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to authenticate to Azure: %w", err)
+	// }
 
-	// Authenticate to M365 if enabled
-	if params.M365Enabled {
-		m365Lease, ok := a.Leases[M365Service]
-		if !ok {
-			return fmt.Errorf("M365 lease not found")
-		}
+	// // Authenticate to M365 if enabled
+	// if params.M365Enabled {
+	// 	// m365Lease, ok := a.Leases[M365Service]
+	// 	// if !ok {
+	// 	// 	return fmt.Errorf("M365 lease not found")
+	// 	// }
 
-		m365Creds, err := m365Lease.Acquire(ctx, params)
-		if err != nil {
-			log.Infof("Warning: Failed to authenticate to M365: %v", err)
-			// Continue anyway, as this is not critical
-		} else {
-			// Merge tokens from M365 into Azure credentials
-			for name, token := range m365Creds.Tokens {
-				azureCreds.Tokens[name] = token
-			}
+	// 	// m365Creds, err := m365Lease.Acquire(ctx, params)
+	// 	// if err != nil {
+	// 	// 	log.Infof("Warning: Failed to authenticate to M365: %v", err)
+	// 	// 	// Continue anyway, as this is not critical
+	// 	// } else {
+	// 	// 	// Merge tokens from M365 into Azure credentials
+	// 	// 	for name, token := range m365Creds.Tokens {
+	// 	// 		azureCreds.Tokens[name] = token
+	// 	// 	}
 
-			// Update expiration if M365 tokens expire earlier
-			if m365Creds.ExpiresAt.Before(azureCreds.ExpiresAt) {
-				azureCreds.ExpiresAt = m365Creds.ExpiresAt
-			}
-		}
-	}
+	// 	// 	// Update expiration if M365 tokens expire earlier
+	// 	// 	if m365Creds.ExpiresAt.Before(azureCreds.ExpiresAt) {
+	// 	// 		azureCreds.ExpiresAt = m365Creds.ExpiresAt
+	// 	// 	}
+	// 	// }
+	// }
 
-	// Update current credentials
-	a.currentCreds = azureCreds
+	// // Update current credentials
+	// a.currentCreds = azureCreds
 
 	// Save to store
 	if err := a.saveToStore(ctx); err != nil {
@@ -234,6 +232,7 @@ func (a *AuthManager) Authenticate(ctx context.Context, params *shared.AuthParam
 }
 
 // GetToken gets a token for the specified service
+// TODO: This probably shouldn't be public?
 func (a *AuthManager) GetToken(service Service) (*shared.Token, error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
@@ -272,7 +271,7 @@ func (a *AuthManager) GetToken(service Service) (*shared.Token, error) {
 
 	// Check if token is expired
 	if time.Now().After(token.ExpiresAt) {
-		return nil, lease.ErrCredentialsExpired
+		return nil, ErrCredentialsExpired
 	}
 
 	return token, nil
@@ -290,61 +289,61 @@ func (a *AuthManager) RenewTokens(ctx context.Context) error {
 
 	log.Debug("Starting token renewal process")
 
-	// Renew Azure/Graph tokens
-	azureLease, ok := a.Leases[AzureService]
-	if !ok {
-		return fmt.Errorf("azure lease not found")
-	}
+	// // Renew Azure/Graph tokens
+	// azureLease, ok := a.Leases[AzureService]
+	// if !ok {
+	// 	return fmt.Errorf("azure lease not found")
+	// }
 
-	// Check if tokens are expired or about to expire
-	if !azureLease.IsExpired(a.currentCreds, 5*time.Minute) {
-		log.Debug("Tokens are not expired, skipping renewal")
-		return nil
-	}
+	// // Check if tokens are expired or about to expire
+	// if !azureLease.IsExpired(a.currentCreds, 5*time.Minute) {
+	// 	log.Debug("Tokens are not expired, skipping renewal")
+	// 	return nil
+	// }
 
-	// Renew the tokens
-	azureCreds, err := azureLease.Renew(ctx, a.currentCreds, a.currentAuthParams)
-	if err != nil {
-		return fmt.Errorf("failed to renew Azure tokens: %w", err)
-	}
+	// // Renew the tokens
+	// azureCreds, err := azureLease.Renew(ctx, a.currentCreds, a.currentAuthParams)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to renew Azure tokens: %w", err)
+	// }
 
-	// Renew M365 tokens if needed
-	if a.currentAuthParams.M365Enabled {
-		m365Lease, ok := a.Leases[M365Service]
-		if !ok {
-			return fmt.Errorf("M365 lease not found")
-		}
+	// // Renew M365 tokens if needed
+	// if a.currentAuthParams.M365Enabled {
+	// 	// m365Lease, ok := a.Leases[M365Service]
+	// 	// if !ok {
+	// 	// 	return fmt.Errorf("M365 lease not found")
+	// 	// }
 
-		// Renew if M365 tokens are present
-		m365TokenFound := false
-		for name := range a.currentCreds.Tokens {
-			if name == "exchange" || name == "msgtrace" {
-				m365TokenFound = true
-				break
-			}
-		}
+	// 	// // Renew if M365 tokens are present
+	// 	// m365TokenFound := false
+	// 	// for name := range a.currentCreds.Tokens {
+	// 	// 	if name == "exchange" || name == "msgtrace" {
+	// 	// 		m365TokenFound = true
+	// 	// 		break
+	// 	// 	}
+	// 	// }
 
-		if m365TokenFound {
-			m365Creds, err := m365Lease.Renew(ctx, a.currentCreds, a.currentAuthParams)
-			if err != nil {
-				log.Infof("Warning: Failed to renew M365 tokens: %v", err)
-				// Continue anyway, as this is not critical
-			} else {
-				// Merge tokens from M365 into Azure credentials
-				for name, token := range m365Creds.Tokens {
-					azureCreds.Tokens[name] = token
-				}
+	// 	// if m365TokenFound {
+	// 	// 	m365Creds, err := m365Lease.Renew(ctx, a.currentCreds, a.currentAuthParams)
+	// 	// 	if err != nil {
+	// 	// 		log.Infof("Warning: Failed to renew M365 tokens: %v", err)
+	// 	// 		// Continue anyway, as this is not critical
+	// 	// 	} else {
+	// 	// 		// Merge tokens from M365 into Azure credentials
+	// 	// 		for name, token := range m365Creds.Tokens {
+	// 	// 			azureCreds.Tokens[name] = token
+	// 	// 		}
 
-				// Update expiration if M365 tokens expire earlier
-				if m365Creds.ExpiresAt.Before(azureCreds.ExpiresAt) {
-					azureCreds.ExpiresAt = m365Creds.ExpiresAt
-				}
-			}
-		}
-	}
+	// 	// 		// Update expiration if M365 tokens expire earlier
+	// 	// 		if m365Creds.ExpiresAt.Before(azureCreds.ExpiresAt) {
+	// 	// 			azureCreds.ExpiresAt = m365Creds.ExpiresAt
+	// 	// 		}
+	// 	// 	}
+	// 	// }
+	// }
 
-	// Update current credentials
-	a.currentCreds = azureCreds
+	// // Update current credentials
+	// a.currentCreds = azureCreds
 
 	// Save to store
 	if err := a.saveToStore(ctx); err != nil {
