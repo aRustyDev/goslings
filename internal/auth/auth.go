@@ -72,7 +72,7 @@ type Options struct {
 }
 
 // NewAuthManager creates a new authentication manager
-func NewAuthManager(opts Options) (*AuthManager, error) {
+func NewAuthManager(ctx context.Context, opts Options) (*AuthManager, error) {
 	auth := &AuthManager{
 		Leases: make(map[Service]lease.Lease),
 	}
@@ -99,7 +99,10 @@ func NewAuthManager(opts Options) (*AuthManager, error) {
 	}
 
 	// Initialize the leases
-	auth.Leases[AzureService] = lease.NewAzureLease(lease.CredentialOptions{})
+	if auth.Leases[AzureService], err = lease.NewLease(ctx, &lease.AzureAuthFactory{}); err != nil {
+		log.Debugf("Failed to lease credentials from Azure: %v", err)
+		// Continue without credentials, we'll get them later
+	}
 	// auth.Leases[M365Service] = lease.NewM365Lease()
 
 	// Load credentials from store

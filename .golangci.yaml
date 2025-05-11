@@ -33,6 +33,13 @@ linters:
             - linters:
                   - errcheck
               text: "azidentity.New.*Credential"
+            - linters:
+                  - golines
+              path: internal/auth/lease/azure.go
+            - linters:
+                  - errcheck
+              path: internal/auth/lease/lease.go
+              text: "l.AuthFactory.GetCredential"
             # # Exclude `lll` issues for long lines with `go:generate`.
             # - linters:
             #       - lll

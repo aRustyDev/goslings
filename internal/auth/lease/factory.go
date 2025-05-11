@@ -2,64 +2,55 @@ package lease
 
 import (
 	"context"
+	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/arustydev/goslings/internal/auth/shared"
 )
 
-// DefaultCredentialFactory implements CredentialFactory using real Azure SDK
-type DefaultCredentialFactory struct {
-	// options CredentialOptions
+// AuthFactory abstracts credential loading and retrieval to allow extending and mocking the available methods
+type AuthFactory interface {
+	// Provides a credential either real or macked
+	GetCredential(
+		ctx context.Context,
+		CredentialCategory CredentialCategory,
+		options *CredentialOptions,
+	) error
+
+	// Acquire acquires a new token
+	GetToken(
+		ctx context.Context,
+		opts policy.TokenRequestOptions,
+	) error
+
+	// IsTokenExpired checks if the token has expired or are about to expire
+	IsTokenExpired(ctx context.Context, gracePeriod time.Duration) bool
+
+	// IsCredentialExpired checks if credentials have expired or are about to expire
+	IsCredentialExpired(ctx context.Context, gracePeriod time.Duration) bool
 }
 
-type DefaultTokenCredential struct{}
-
-// // NewDeviceCodeCredential creates a real device code credential
-// func (f *DefaultCredentialFactory) NewDeviceCodeCredential(options *azidentity.DeviceCodeCredentialOptions) (TokenCredential, error) {
-// 	return azidentity.NewDeviceCodeCredential(options)
-// }
-
-// // NewClientSecretCredential creates a real client secret credential
-// func (f *DefaultCredentialFactory) NewClientSecretCredential(tenantID, clientID, clientSecret string, options *azidentity.ClientSecretCredentialOptions) (TokenCredential, error) {
-// 	return azidentity.NewClientSecretCredential(tenantID, clientID, clientSecret, options)
-// }
-
-// // NewInteractiveBrowserCredential creates a real interactive browser credential
-// func (f *DefaultCredentialFactory) NewInteractiveBrowserCredential(options *azidentity.InteractiveBrowserCredentialOptions) (TokenCredential, error) {
-// 	return azidentity.NewInteractiveBrowserCredential(options)
-// }
-
-func (f *DefaultCredentialFactory) GetCredential(
-	ctx context.Context,
-	CredentialCategory CredentialCategory,
-	options *CredentialOptions,
-) (TokenCredential, error) {
-	switch CredentialCategory {
-	case DeviceCode:
-		azidentity.NewDeviceCodeCredential(&azidentity.DeviceCodeCredentialOptions{
-			TenantID:   options.TenantID,
-			ClientID:   options.ClientID,
-			UserPrompt: options.UserPrompt,
-		})
-	case ClientSecret:
-		azidentity.NewClientSecretCredential(
-			options.TenantID,
-			options.ClientID,
-			options.ClientSecret,
-			&azidentity.ClientSecretCredentialOptions{})
-	case InteractiveBrowser:
-		azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{
-			TenantID: options.TenantID,
-			ClientID: options.ClientID,
-		})
-	}
-	return &DefaultTokenCredential{}, nil
+// CredentialOptions is a struct for holding all options that any Credential returned by a AuthFactory GetCredential() could require
+type CredentialOptions struct {
+	DeviceCodeOptions         *azidentity.DeviceCodeCredentialOptions
+	TenantID                  string
+	ClientID                  string
+	ClientSecret              string
+	ClientSecretOptions       *azidentity.ClientSecretCredentialOptions
+	InteractiveBrowserOptions *azidentity.InteractiveBrowserCredentialOptions
+	Category                  *CredentialCategory
+	Method                    *CredentialMethod
+	AuthParams                *shared.AuthParams
+	UserPrompt                func(ctx context.Context, deviceCode azidentity.DeviceCodeMessage) error
 }
 
-func (f *DefaultTokenCredential) GetToken(
-	ctx context.Context,
-	opts policy.TokenRequestOptions,
-) (*azcore.AccessToken, error) {
-	return &azcore.AccessToken{}, nil
-}
+// lease(ctx, azcf) -> someLease
+// 		c = azcf.getcred()
+// 		return c.getToken(tgt)
+//
+// someLease {
+// 		token
+// 		credFact
+//
+// }

@@ -32,8 +32,8 @@ func (f *MockCredentialFactory) GetCredential(
 	ctx context.Context,
 	CredentialCategory lease.CredentialCategory,
 	options *lease.CredentialOptions,
-) (lease.TokenCredential, error) {
-	return &MockTokenCredential{}, nil
+) error {
+	return nil
 }
 
 func (f *MockTokenCredential) GetToken(

@@ -31,7 +31,7 @@ var authCmd = &cobra.Command{
 		}
 
 		// Initialize the auth manager
-		authManager, err := auth.NewAuthManager(auth.Options{
+		authManager, err := auth.NewAuthManager(cmd.Context(), auth.Options{
 			StoreType:     shared.FileStore,
 			StorePath:     "./.credentials",
 			EncryptionKey: encryptionKey,
