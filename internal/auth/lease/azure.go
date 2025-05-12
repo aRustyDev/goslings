@@ -1,29 +1,218 @@
 package lease
 
+//go:generate mockgen . AzureFactory
+// -source=azure.go -destination=azure_mocks_test.go -package=lease
+
 import (
 	"context"
-	"time"
+	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	private "github.com/AzureAD/microsoft-authentication-library-for-go/apps/confidential"
+	managed "github.com/AzureAD/microsoft-authentication-library-for-go/apps/managedidentity"
+	public "github.com/AzureAD/microsoft-authentication-library-for-go/apps/public"
 	"github.com/arustydev/goslings/internal/auth/shared"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
-// AzureAuthFactory implements AuthFactory for Azure authentication
-type AzureAuthFactory struct {
-	Options    CredentialOptions
-	CloudURL   string
-	Expiration time.Time
-	Token      *azcore.AccessToken
+// Where is the app running from, client side, private server, or azure managed service?
+type AppPosture string
+
+const (
+	Public  AppPosture = "public"
+	Private AppPosture = "confidential"
+	Managed AppPosture = "managed"
+
+	Azure LeaseProvider = "azure"
+	M365  LeaseProvider = "m365"
+	D4iot LeaseProvider = "d4iot"
+
+	DeviceCode         AcquisitionMethod = "devicecode"         // acquires a security token from the authority, by acquiring a device code and using that to acquire the token. Users need to create an AcquireTokenDeviceCodeParameters instance and pass it in.
+	ClientSecret       AcquisitionMethod = "clientsecret"       // acquires a security token from the authority, using an authorization code. The specified redirect URI must be the same URI that was used when the authorization code was requested
+	InteractiveBrowser AcquisitionMethod = "interactivebrowser" // acquires a security token from the authority using the default web browser to select the account
+	UserPass           AcquisitionMethod = "userpass"           // acquires a security token from the authority, via Username/Password Authentication.
+	Silent             AcquisitionMethod = "silent"             // acquires a token from either the cache or using a refresh token
+	Credential         AcquisitionMethod = "credential"         //
+	// invokes a callback to get assertions authenticating the application
+)
+
+type AzureCredentialFactory interface {
+	DefaultCredentialFactory
+	getCloudURL(params *shared.AuthParams) string
 }
 
-func (f *AzureAuthFactory) GetCredential(
+type AzureAuthFactory interface {
+	DefaultAuthFactory
+}
+
+type AzureOptions struct {
+	Posture  AppPosture
+	Method   AcquisitionMethod
+	ClientId string
+}
+
+// RealAzureAuthFactory implements CredentialFactoryfor Azure authentication
+type RealAzureAuthFactory struct {
+	DefaultAuthFactory
+	CloudURL string
+	Options  *AzureOptions
+	Params   *shared.AuthParams
+}
+
+func (f *RealAzureAuthFactory) GetToken(
 	ctx context.Context,
-	CredentialCategory CredentialCategory,
+	opts policy.TokenRequestOptions,
+) error {
+	// Set the cloud URL based on parameters
+	f.CloudURL = f.getCloudURL(f.Params)
+
+	switch f.Options.Posture {
+	case Public:
+		client, err := public.New(f.Options.ClientId, public.WithHTTPClient(f.Client))
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+		switch f.Options.Method {
+		case DeviceCode:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenByDeviceCode(ctx, scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		case ClientSecret:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenByAuthCode(ctx, "code", "redirectURI", scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		case UserPass:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenByUsernamePassword(ctx, scopes, "username", "password")
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		case Silent:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenSilent(ctx, scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		default: // InteractiveBrowser:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenInteractive(ctx, scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		}
+	case Private:
+		var cred private.Credential
+		var err error
+		switch f.Options.Method {
+		case "assertion":
+			// https://pkg.go.dev/github.com/AzureAD/microsoft-authentication-library-for-go@v1.4.2/apps/confidential#NewCredFromAssertionCallback
+			// cred = private.NewCredFromAssertionCallback("secret") // takes a callback func
+			log.Fatal("NOT IMPLEMENTED YET")
+		case "token-provider":
+			// https://pkg.go.dev/github.com/AzureAD/microsoft-authentication-library-for-go@v1.4.2/apps/confidential#NewCredFromTokenProvider
+			// creates a Credential from a function that provides access tokens
+			// cred = private.NewCredFromTokenProvider("secret") // takes a callback func
+			log.Fatal("NOT IMPLEMENTED YET")
+		case "certificate":
+			b, err := os.ReadFile(viper.GetString("GOSLING_AZURE_CONFIDENTIAL_CERT_PATH"))
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+
+			// This extracts our public certificates and private key from the PEM file. If it is
+			// encrypted, the second argument must be password to decode.
+			certs, priv, err := private.CertFromPEM(b, viper.GetString("GOSLING_AZURE_CONFIDENTIAL_CERT_PASS"))
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+			cred, err = private.NewCredFromCert(certs, priv)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		default:
+			cred, err = private.NewCredFromSecret("secret")
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		}
+		client, err := private.New("authority", f.Options.ClientId, cred, private.WithHTTPClient(f.Client))
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+		switch f.Options.Method {
+		case ClientSecret:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenByAuthCode(ctx, "code", "redirectURI", scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		case Credential:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenByCredential(ctx, scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		case UserPass:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenByUsernamePassword(ctx, scopes, viper.GetString("GOSLING_AZURE_CONFIDENTIAL_USER"), viper.GetString("GOSLING_AZURE_CONFIDENTIAL_PASS"))
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		case Silent:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			_, err = client.AcquireTokenSilent(ctx, scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		default: // InteractiveBrowser:
+			scopes := []string{"https://graph.microsoft.com/.default"}
+			// TODO: verify "userAssertion" values
+			// https: //pkg.go.dev/github.com/AzureAD/microsoft-authentication-library-for-go@v1.4.2/apps/confidential#Client.AcquireTokenOnBehalfOf
+			_, err = client.AcquireTokenOnBehalfOf(ctx, "userAssertion", scopes)
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		}
+	default: // Managed
+		client, err := managed.New(managed.SystemAssigned(), managed.WithHTTPClient(f.Client))
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+		_, err = client.AcquireToken(ctx, "resource")
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+	}
+	f.Token = &azcore.AccessToken{}
+	return nil
+}
+
+// getCloudURL returns the appropriate cloud URL based on params
+func (f *RealAzureAuthFactory) getCloudURL(params *shared.AuthParams) string {
+	if params.UsGovernment {
+		return "https://login.microsoftonline.us"
+	}
+	return "https://login.microsoftonline.com"
+}
+
+// RealAzureAuthFactory implements CredentialFactoryfor Azure authentication
+type RealAzureCredentialFactory struct {
+	DefaultCredentialFactory
+}
+
+func (f *RealAzureCredentialFactory) GetCredential(
+	ctx context.Context,
+	AcquisitionMethod AcquisitionMethod,
 	options *CredentialOptions,
 ) error {
-	switch CredentialCategory {
+	switch AcquisitionMethod {
 	case DeviceCode:
 		azidentity.NewDeviceCodeCredential(&azidentity.DeviceCodeCredentialOptions{
 			TenantID:   options.TenantID,
@@ -44,226 +233,3 @@ func (f *AzureAuthFactory) GetCredential(
 	}
 	return nil
 }
-
-func (f *AzureAuthFactory) GetToken(
-	ctx context.Context,
-	opts policy.TokenRequestOptions,
-) error {
-	// Set the cloud URL based on parameters
-	f.CloudURL = f.getCloudURL(f.Options.AuthParams)
-	f.Token = &azcore.AccessToken{}
-	return nil
-}
-
-// getCloudURL returns the appropriate cloud URL based on params
-func (l *AzureAuthFactory) getCloudURL(params *shared.AuthParams) string {
-	if params.UsGovernment {
-		return "https://login.microsoftonline.us"
-	}
-	return "https://login.microsoftonline.com"
-}
-
-func (l *AzureAuthFactory) IsTokenExpired(ctx context.Context, gracePeriod time.Duration) bool {
-	return time.Now().After(l.Expiration.Add(-gracePeriod))
-}
-
-func (l *AzureAuthFactory) IsCredentialExpired(ctx context.Context, gracePeriod time.Duration) bool {
-	return time.Now().After(l.Expiration.Add(-gracePeriod))
-}
-
-// // acquireViaDeviceCode attempts to authenticate using device code flow
-// func (l *AzureAuthFactory) acquireViaDeviceCode(
-// 	ctx context.Context,
-// 	params *shared.AuthParams,
-// 	creds *shared.Credentials,
-// ) error {
-// 	log.Info("Attempting to authenticate via device code. You may have to accept MFA prompts.")
-
-// 	// Skip if no tenant or client ID
-// 	if params.TenantID == "" || params.ClientID == "" {
-// 		return errors.New("tenant ID and client ID are required for device code authentication")
-// 	}
-
-// 	// Define the device code callback
-// 	deviceCodeCallback := func(ctx context.Context, deviceCode azidentity.DeviceCodeMessage) error {
-// 		log.Infof("Device code authentication - Your MFA code is: %s", deviceCode.UserCode)
-// 		log.Infof("Please authenticate at: %s", deviceCode.VerificationURL)
-// 		return nil
-// 	}
-
-// 	// // Create options
-// 	// options := &azidentity.DeviceCodeCredentialOptions{}
-
-// 	// Create the credential using the factory
-// 	credential, err := l.AuthFactory.GetCredential(ctx, DeviceCode, &CredentialOptions{
-// 		TenantID:   params.TenantID,
-// 		ClientID:   params.ClientID,
-// 		UserPrompt: deviceCodeCallback,
-// 	})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create device code credential: %w", err)
-// 	}
-
-// 	// Define scopes
-// 	scopes := []string{"https://graph.microsoft.com/.default"}
-
-// 	// Get token
-// 	azToken, err := credential.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to get token with device code: %w", err)
-// 	}
-
-// 	// Convert to our token format
-// 	token := &shared.Token{
-// 		Value:     azToken.Token,
-// 		Type:      "Bearer",
-// 		ExpiresAt: azToken.ExpiresOn,
-// 		Scopes:    scopes,
-// 		Resource:  "https://graph.microsoft.com",
-// 	}
-
-// 	// Add to credentials
-// 	creds.Tokens["graph"] = token
-// 	creds.AuthType = shared.DeviceCodeAuth
-
-// 	log.Debug("Successfully authenticated with device code")
-
-// 	return nil
-// }
-
-// // acquireViaClientCredentials attempts to authenticate using client credentials
-// func (l *AzureAuthFactory) acquireViaClientCredentials(
-// 	ctx context.Context,
-// 	params *shared.AuthParams,
-// 	creds *shared.Credentials,
-// ) error {
-// 	log.Info("Attempting to authenticate with client credentials")
-
-// 	// Validate required fields
-// 	if params.ClientID == "" || params.ClientSecret == "" || params.TenantID == "" {
-// 		return errors.New(
-// 			"client ID, client secret, and tenant ID are required for client credentials auth",
-// 		)
-// 	}
-
-// 	// // Create options
-// 	// options := &azidentity.ClientSecretCredentialOptions{}
-
-// 	// Create the credential using the factory
-// 	credential, err := l.AuthFactory.GetCredential(ctx, ClientSecret, &CredentialOptions{
-// 		TenantID:     params.TenantID,
-// 		ClientID:     params.ClientID,
-// 		ClientSecret: params.ClientSecret,
-// 		// options,
-// 	})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create client secret credential: %w", err)
-// 	}
-
-// 	// Define scopes
-// 	scopes := []string{"https://graph.microsoft.com/.default"}
-
-// 	// Get token
-// 	azToken, err := credential.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to get token with client credentials: %w", err)
-// 	}
-
-// 	// Convert to our token format
-// 	token := &shared.Token{
-// 		Value:     azToken.Token,
-// 		Type:      "Bearer",
-// 		ExpiresAt: azToken.ExpiresOn,
-// 		Scopes:    scopes,
-// 		Resource:  "https://graph.microsoft.com",
-// 	}
-
-// 	// Add to credentials
-// 	creds.Tokens["graph"] = token
-// 	creds.AuthType = shared.ClientCredentialsAuth
-
-// 	log.Debug("Successfully authenticated with client credentials")
-
-// 	return nil
-// }
-
-// // acquireViaInteractiveBrowser attempts to authenticate using interactive browser
-// func (l *AzureAuthFactory) acquireViaInteractiveBrowser(
-// 	ctx context.Context,
-// 	params *shared.AuthParams,
-// 	creds *shared.Credentials,
-// ) error {
-// 	log.Info("Attempting to authenticate with interactive browser login")
-
-// 	// Skip if no tenant or client ID
-// 	if params.TenantID == "" || params.ClientID == "" {
-// 		return errors.New(
-// 			"tenant ID and client ID are required for interactive browser authentication",
-// 		)
-// 	}
-
-// 	// // Create options
-// 	// options := &azidentity.InteractiveBrowserCredentialOptions{
-// 	// 	TenantID: params.TenantID,
-// 	// 	ClientID: params.ClientID,
-// 	// }
-
-// 	// Create the credential using the factory
-// 	credential, err := l.AuthFactory.GetCredential(
-// 		ctx,
-// 		InteractiveBrowser,
-// 		&CredentialOptions{
-// 			TenantID: params.TenantID,
-// 			ClientID: params.ClientID,
-// 		},
-// 	)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create interactive browser credential: %w", err)
-// 	}
-
-// 	// Define scopes
-// 	scopes := []string{"https://graph.microsoft.com/.default"}
-
-// 	// Get token
-// 	err := l.GetToken(ctx, policy.TokenRequestOptions{Scopes: scopes})
-// 	if err != nil {
-// 		return fmt.Errorf("failed to get token with interactive browser login: %w", err)
-// 	}
-
-// 	// Convert to our token format
-// 	token := &shared.Token{
-// 		Value:     azToken.Token,
-// 		Type:      "Bearer",
-// 		ExpiresAt: azToken.ExpiresOn,
-// 		Scopes:    scopes,
-// 		Resource:  "https://graph.microsoft.com",
-// 	}
-
-// 	// Add to credentials
-// 	creds.Tokens["graph"] = token
-// 	creds.AuthType = shared.InteractiveAuth
-
-// 	log.Debug("Successfully authenticated with interactive browser login")
-
-// 	return nil
-// }
-
-// // updateCredentialsExpiration updates the overall expiration time of the credentials
-// // to be the earliest expiration time of any token
-// func (l *AzureAuthFactory) updateCredentialsExpiration(creds *shared.Credentials) {
-// 	var earliestExpiration time.Time
-// 	first := true
-
-// 	// Find the earliest expiration time
-// 	for _, token := range creds.Tokens {
-// 		if first || token.ExpiresAt.Before(earliestExpiration) {
-// 			earliestExpiration = token.ExpiresAt
-// 			first = false
-// 		}
-// 	}
-
-// 	// If we found an expiration time, update the credentials
-// 	if !first {
-// 		creds.ExpiresAt = earliestExpiration
-// 	}
-// }

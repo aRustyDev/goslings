@@ -12,9 +12,10 @@ import (
 
 type Lease struct {
 	// CloudURL    string          // cloud environment URL (commercial or government)
-	AuthFactory AuthFactory        // Factory for getting credentials (allows mocking & real cred retrieval)
-	Expiration  time.Time          // When the credential will expire
-	Options     *CredentialOptions //
+	CredentialFactory CredentialFactory  // Factory for getting credentials (allows mocking & real cred retrieval)
+	AuthFactory       AuthFactory        // Factory for external authentication; ie token retrieval (allows mocking & real cred retrieval)
+	Expiration        time.Time          // When the credential will expire
+	Options           *CredentialOptions //
 }
 
 type LeaseInfo struct {
@@ -31,25 +32,24 @@ type LeaseProvider string
 type LeaseProxy string
 
 const (
-	Azure LeaseProvider = "azure"
-	M365  LeaseProvider = "m365"
-	D4iot LeaseProvider = "d4iot"
-
 	Vault LeaseProxy = "vault"
 )
 
-func NewLease(ctx context.Context, f AuthFactory) (Lease, error) {
+func NewLease(ctx context.Context, f CredentialFactory) (Lease, error) {
 	return Lease{
-		AuthFactory: f,
-		Expiration:  time.Now().Add(time.Hour * 24),
-		Options:     &CredentialOptions{},
+		CredentialFactory: f,
+		Expiration:        time.Now().Add(time.Hour * 24),
+		Options:           &CredentialOptions{},
 	}, nil
 }
 
 // Acquire implements Lease.Acquire for Lease
 func (l *Lease) Acquire(ctx context.Context) (*shared.Credentials, error) {
 	// Load the Credential for token retrieval
-	l.AuthFactory.GetCredential(ctx, DeviceCode, l.Options)
+	err := l.CredentialFactory.GetCredential(ctx, DeviceCode, l.Options)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
 
 	// Create a new credentials map
 	creds := &shared.Credentials{
@@ -59,8 +59,10 @@ func (l *Lease) Acquire(ctx context.Context) (*shared.Credentials, error) {
 	}
 
 	// Retrieve the Token
-	if err := l.AuthFactory.GetToken(ctx, policy.TokenRequestOptions{}); err != nil {
+	if token, err := l.AuthFactory.AcquireToken(ctx, policy.TokenRequestOptions{}); err != nil {
 		log.Debugf("Device code authentication failed: %v", err)
+	} else {
+		creds.Tokens["example"] = token
 	}
 
 	return creds, nil
@@ -79,8 +81,10 @@ func (l *Lease) Renew(ctx context.Context) (*shared.Credentials, error) {
 	}
 
 	// Retrieve the Token
-	if err := l.AuthFactory.GetToken(ctx, policy.TokenRequestOptions{}); err != nil {
+	if token, err := l.AuthFactory.AcquireToken(ctx, policy.TokenRequestOptions{}); err != nil {
 		log.Debugf("Device code authentication failed: %v", err)
+	} else {
+		creds.Tokens["example"] = token
 	}
 
 	return creds, nil

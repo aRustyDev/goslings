@@ -1,18 +1,14 @@
 // Package lease provides interfaces and implementations for acquiring and renewing authentication tokens
 package lease
 
-// CredentialCategory the Kind of credential retrieved
-type CredentialCategory string
+// AcquisitionMethod the Kind of credential retrieved
+type AcquisitionMethod string
 
 // CredentialMethod represents how the credential was retrieved
 type CredentialMethod string
 
 const (
-	DeviceCode         CredentialCategory = "devicecode"
-	ClientSecret       CredentialCategory = "clientsecret"
-	InteractiveBrowser CredentialCategory = "interactivebrowser"
-
-	LocalFile  CredentialMethod = "local"
-	Config     CredentialMethod = "config"
-	VaultLease CredentialMethod = "vault"
+	LocalFile CredentialMethod = "local" // Load Creds from local
+	EnvVars   CredentialMethod = "env"   // Load Creds from envvars
+	VaultRead CredentialMethod = "vault" // Load Creds from vault
 )

@@ -99,7 +99,7 @@ func NewAuthManager(ctx context.Context, opts Options) (*AuthManager, error) {
 	}
 
 	// Initialize the leases
-	if auth.Leases[AzureService], err = lease.NewLease(ctx, &lease.AzureAuthFactory{}); err != nil {
+	if auth.Leases[AzureService], err = lease.NewLease(ctx, &lease.RealAzureCredentialFactory{}); err != nil {
 		log.Debugf("Failed to lease credentials from Azure: %v", err)
 		// Continue without credentials, we'll get them later
 	}
