@@ -5,27 +5,31 @@
 # ==============================
 APP_NAME = goslings
 VERSION = $(shell rg -No "\d+\.\d+\.\d+" internal/about/version.go)
-MAKE_DEPS = gh go git rg docker codecov
+MAKE_DEPS = gh go git rg docker codecov gitsign cosign codecov-cli
 USER = arustydev
 GHCR = github.com/$(USER)/$(APP_NAME)
 DOCKER_CR = docker.io/$(USER)/$(APP_NAME)
 UI_TYPES = cli tui api headless
 
+export APP_NAME
+export VERSION
+export MAKE_DEPS
+export USER
+export GHCR
+export DOCKER_CR
+export UI_TYPES
+
 # ==============================
 # Functions
 # ==============================
-ui_tag = $(APP_NAME)-$(1):$(VERSION)
 docker_push = docker image tag $(APP_NAME):$(VERSION) $(1):$(VERSION) && docker image push $(1):$(VERSION)
-
+update_issue = $(if $(ISSUE),gh issue comment -e $(ISSUE),echo "ERROR: need to specify ISSUE, example: make update-issue ISSUE='X'")
 
 # ==============================
 # Targets
 # ==============================
 build:
-	@go build -o cmd/cli/$(APP_NAME) cmd/cli/main.go
-	@go build -o cmd/tui/$(APP_NAME) cmd/tui/main.go
-	@go build -o cmd/api/$(APP_NAME) cmd/api/main.go
-	@go build -o cmd/headless/$(APP_NAME) cmd/headless/main.go
+	@RELEASE=false ./.scripts/build.sh $(UI_TYPES)
 
 release: tag
 	#Creating Release for GitHub
@@ -36,14 +40,7 @@ pre-publish: tag
 	@gh release create v$(VERSION) --title "v$(VERSION)" --draft --prerelease --notes-from-tag 'cmd/cli/$(APP_NAME)#CLI Binary' 'cmd/tui/$(APP_NAME)#TUI Binary' 'cmd/api/$(APP_NAME)#API Binary' 'cmd/headless/$(APP_NAME)#Headless Binary'
 
 build-release:
-	#Building CLI
-	@docker build --tag $(APP_NAME)-cli:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target cli ./build/
-	#Building TUI
-	@docker build --tag $(APP_NAME)-tui:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target tui ./build/
-	#Building API
-	@docker build --tag $(APP_NAME)-api:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target api ./build/
-	#Building Headless
-	@docker build --tag $(APP_NAME)-headless:$(VERSION) --build-arg VERSION=$(VERSION) --build-arg NAME=$(APP_NAME) --target headless ./build/
+	@RELEASE=true ./.scripts/build.sh $(UI_TYPES)
 
 tag: build-release
 	@git tag -a $(VERSION)
@@ -51,12 +48,32 @@ tag: build-release
 	@$(call docker_push, $(DOCKER_CR))
 	@$(call docker_push, $(GHCR))
 
+issue:
+	@gh issue create -a "@me" -e
+
+update-issue:
+	@$(call update_issue)
+
+# https://awesome-go.com/testing/
 test:
-	# Note: The exact path to policy.go might vary. A more robust way is to define an interface in your code
-	# that mirrors azcore.TokenCredential if you have trouble with direct generation.
-	# Or, more commonly, your code will accept an azcore.TokenCredential interface.
-	@mockgen -source=$(GOPATH)/pkg/mod/github.com/Azure/azure-sdk-for-go/sdk/azcore@vX.Y.Z/policy/policy.go -destination=mocks/mock_azcore_policy.go -package=mocks TokenCredential
-	@go test -v ./...
+	@#mockgen -source=$(GOPATH)/pkg/mod/github.com/Azure/azure-sdk-for-go/sdk/azcore@vX.Y.Z/policy/policy.go -destination=mocks/mock_azcore_policy.go -package=mocks TokenCredential
+	@#go test -race -covermode=atomic -coverprofile=test/coverage/$(VERSION).cov -v ./...
+	@#go test -c -cover -o app.test && ./app.test -test.run="IntegrationTest" -test.coverprofile=integration.cov && go tool cover -html=integration.cov
+	@RELEASE="false" ./.scripts/test.sh
+
+# https://github.com/ultraware/golang-fuzz
+# https://go.dev/doc/tutorial/fuzz
+# https://github.com/CodeIntelligenceTesting/gofuzz
+# https://go.dev/doc/security/fuzz/
+# https://github.com/kisielk/goflamegraph
+# https://hackernoon.com/go-the-complete-guide-to-profiling-your-code-h51r3waz
+# https://adihumara.gitbooks.io/golang/content/testing/profiling.html
+fuzz:
+	@go test -fuzz ./...
+	@go test -benchmem -cpuprofile cpu.prof -memprofile mem.prof -blockprofile block.prof -bench .
+	@docker run uber/go-torch -u http://<host ip>:8080/debug/pprof -p -t=30 > torch.svg
+	@echo "GET http://localhost:8080/ping" | vegeta attack -rate 250 -duration=60s | vegeta report
+	@open -a `Google Chrome` torch.svg
 
 upgrade-make-deps:
 	@echo "TODO: Script upgrading make deps"

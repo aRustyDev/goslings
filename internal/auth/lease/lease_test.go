@@ -1,0 +1,3 @@
+package lease
+
+// Lease MockAzure

@@ -5,6 +5,7 @@ package auth
 // 	"crypto/rand"
 // 	"goslings/internal/auth/shared"
 // 	"testing"
+//  "github.com/stretchr/testify/assert"
 // )
 
 // // Mock implementation for testing

@@ -1,0 +1,11 @@
+graph TD
+	Lease[Lease]
+    CredentialFactory[CredentialFactory]
+    AuthFactory[AuthFactory]
+    AzureCredentialFactory[AzureCredentialFactory]
+    AzureAuthFactory[AzureAuthFactory]
+
+    Lease -->|Interfaces| CredentialFactory
+    Lease -->|Interfaces| AuthFactory
+    CredentialFactory -->|implements| AzureCredentialFactory
+    AuthFactory -->|implements| AzureAuthFactory
