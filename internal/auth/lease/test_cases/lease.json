@@ -1,0 +1,190 @@
+{
+    "AuthParams": [
+        {
+            "name": "device code success",
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetDeviceCodeSuccess(\"device-code-token\", time.Hour)}",
+            "expect": {},
+            "wantErr": false
+        },
+        {
+            "name": "device code fails, client secret succeeds",
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id",
+                "ClientSecret": "test-client-secret"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetDeviceCodeFailure(errors.New(\"device code failed\")) mock.SetClientSecretSuccess(\"client-secret-token\", time.Hour) }",
+            "expect": {},
+            "wantErr": false
+        },
+        {
+            "name": "device code and client secret fail, interactive browser succeeds",
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetDeviceCodeFailure(errors.New(\"device code failed\")) mock.SetClientSecretFailure(errors.New(\"client secret failed\")) mock.SetInteractiveBrowserSuccess(\"interactive-browser-token\", time.Hour) }",
+            "expect": {},
+            "wantErr": false
+        },
+        {
+            "name": "all auth methods fail",
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetDeviceCodeFailure(errors.New(\"device code failed\")) mock.SetClientSecretFailure(errors.New(\"client secret failed\")) mock.SetInteractiveBrowserFailure(errors.New(\"interactive browser failed\"))}",
+            "expect": {},
+            "wantErr": true
+        },
+        {
+            "name": "missing tenant ID and client ID",
+            "params": {},
+            "mockFn": "",
+            "expect": {},
+            "wantErr": true
+        },
+        {
+            "name": "US government cloud",
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id",
+                "UsGovernment": true
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetDeviceCodeSuccess(\"device-code-token\", time.Hour) }",
+            "expect": {},
+            "wantErr": false
+        }
+    ],
+    "isExpired": [
+        {
+            "name": "nil credentials",
+            "creds": "",
+            "gracePeriod": 0,
+            "want": true
+        },
+        {
+            "name": "empty credentials",
+            "creds": {
+                "Tokens": []
+            },
+            "gracePeriod": 0,
+            "want": true
+        },
+        {
+            "name": "expired credentials",
+            "creds": {
+                "Tokens": [
+                    {
+                        "graph": {
+                            "Value": "token",
+                            "ExpiresAt": "time.Now().Add(-5 * time.Minute)"
+                        }
+                    }
+                ],
+                "ExpiresAt": "time.Now().Add(-5 * time.Minute)"
+            },
+            "gracePeriod": 0,
+            "want": true
+        },
+        {
+            "name": "valid credentials",
+            "creds": {
+                "Tokens": [
+                    {
+                        "graph": {
+                            "Value": "token",
+                            "ExpiresAt": "time.Now().Add(30 * time.Minute)"
+                        }
+                    }
+                ],
+                "ExpiresAt": "time.Now().Add(30 * time.Minute)"
+            },
+            "gracePeriod": 0,
+            "want": false
+        },
+        {
+            "name": "expiring soon, with grace period",
+            "creds": {
+                "Tokens": [
+                    {
+                        "graph": {
+                            "Value": "token",
+                            "ExpiresAt": "time.Now().Add(5 * time.Minute)"
+                        }
+                    }
+                ],
+                "ExpiresAt": "time.Now().Add(5 * time.Minute)"
+            },
+            "gracePeriod": 10,
+            "want": true
+        }
+    ],
+    "renew": [
+        {
+            "name": "renew valid device code token",
+            "creds": {
+                "Tokens": [
+                    {
+                        "graph": "validToken"
+                    }
+                ],
+                "AuthType": "auth.DeviceCodeAuth",
+                "LastRefreshed": "time.Now().Add(-30 * time.Minute)",
+                "ExpiresAt": "validToken.ExpiresAt"
+            },
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetDeviceCodeSuccess(\"renewed-device-code-token\", time.Hour) }",
+            "expect": "renewed-device-code-token",
+            "wantErr": false
+        },
+        {
+            "name": "renew expired client secret token",
+            "creds": {
+                "Tokens": [
+                    {
+                        "graph": "expiredToken"
+                    }
+                ],
+                "AuthType": "auth.ClientCredentialsAuth",
+                "LastRefreshed": "time.Now().Add(-2 * time.Hour)",
+                "ExpiresAt": "expiredToken.ExpiresAt"
+            },
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id",
+                "ClientSecret": "test-client-secret"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetClientSecretSuccess(\"renewed-client-secret-token\", time.Hour) }",
+            "expect": "renewed-client-secret-token",
+            "wantErr": false
+        },
+        {
+            "name": "renewal fails",
+            "creds": {
+                "Tokens": [
+                    {
+                        "graph": "validToken"
+                    }
+                ],
+                "AuthType": "auth.InteractiveAuth",
+                "LastRefreshed": "time.Now().Add(-30 * time.Minute)",
+                "ExpiresAt": "validToken.ExpiresAt"
+            },
+            "params": {
+                "TenantID": "test-tenant-id",
+                "ClientID": "test-client-id"
+            },
+            "mockFn": "func(mock *MockCredentialFactory) { mock.SetInteractiveBrowserFailure(errors.New(\"renewal failed\")) }",
+            "expect": "",
+            "wantErr": true
+        }
+    ]
+}
